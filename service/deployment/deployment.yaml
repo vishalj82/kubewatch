@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubewatch-deployment
+  namespace: kubewatch
+  labels:
+    app: kubewatch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubewatch
+  template:
+    metadata:
+      labels:
+        app: kubewatch
+    spec:
+      containers:
+      - name: kubewatch
+        image: docker.io/vishalj82/kubewatch-service:latest
+        volumeMounts:
+          - mountPath: /opt/kubewatch/certs
+            name: kubewatch-certs
+        ports:
+        - containerPort: 443
+      initContainers:
+      - name: kubewatch-tls-init
+        image: docker.io/vishalj82/kubewatch-tls-init:latest
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - mountPath: /opt/kubewatch/certs
+            name: kubewatch-certs
+        env:
+          - name: MUTATE_CONFIG
+            value: mutating-webhook-configuration
+          - name: VALIDATE_CONFIG
+            value: validating-webhook-configuration
+          - name: WEBHOOK_SERVICE
+            value: kubewatch-service
+          - name: WEBHOOK_NAMESPACE
+            value: kubewatch
+      volumes:
+        - name: kubewatch-certs
+          emptyDir: { }
+
